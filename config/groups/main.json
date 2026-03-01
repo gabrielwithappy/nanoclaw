@@ -1,0 +1,9 @@
+{
+  "additionalMounts": [
+    {
+      "hostPath": "~/documents/work-nanoclaw/nanoclawKMS/main",
+      "containerPath": "nanoclawKMS-main",
+      "readonly": false
+    }
+  ]
+}

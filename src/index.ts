@@ -41,6 +41,7 @@ import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
+import { syncGroupConfigs } from './config-sync.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -249,12 +250,12 @@ async function runAgent(
   // Wrap onOutput to track session ID from streamed results
   const wrappedOnOutput = onOutput
     ? async (output: ContainerOutput) => {
-        if (output.newSessionId) {
-          sessions[group.folder] = output.newSessionId;
-          setSession(group.folder, output.newSessionId);
-        }
-        await onOutput(output);
+      if (output.newSessionId) {
+        sessions[group.folder] = output.newSessionId;
+        setSession(group.folder, output.newSessionId);
       }
+      await onOutput(output);
+    }
     : undefined;
 
   try {
@@ -464,6 +465,7 @@ async function main(): Promise<void> {
   }
   initDatabase();
   logger.info('Database initialized');
+  syncGroupConfigs(); // Sync dynamic configuration overrides before local state load
   loadState();
 
   // Graceful shutdown handlers
