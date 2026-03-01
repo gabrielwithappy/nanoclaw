@@ -482,7 +482,7 @@ Claude봇: [mcp__nanoclaw__schedule_task 기능 호출]
 
 NanoClaw는 그룹(채팅방)별로 격리된 컨테이너 환경에서 에이전트가 실행되며, 각 그룹마다 **독립적인 스킬(Skills) 세트**를 가질 수 있습니다.
 
-> **참고:** 실제 스킬 추가 및 관리 방법은 [컨테이너 스킬 추가하기](./container-skills.md) 문서를 참조하세요. 여기서는 시스템 아키텍처 관점에서 스킬이 어떻게 동작하는지 설명합니다.
+> **참고:** 실제 스킬 추가 및 권한 위치 관리에 대한 가이드는 [스킬 설치 방법과 위치별 권한 특징 가이드](./skill-installation-and-permissions.md) 문서를 참조하세요. 여기서는 시스템 아키텍처 관점에서 스킬이 어떻게 동작하는지 설명합니다.
 
 ### 스킬 동기화 메커니즘 (Skill Synchronization Mechanism)
 
