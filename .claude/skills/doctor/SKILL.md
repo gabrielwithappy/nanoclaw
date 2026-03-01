@@ -15,9 +15,50 @@ Runs automated diagnostics to detect common issues and inconsistencies. This ski
 
 **Principle:** Detect issues automatically, provide clear diagnostics, and offer specific fixes. When possible, ask permission and fix problems directly.
 
+## How It Works
+
+1. **Read known issues** from `references/` directory
+2. **Run detection scripts** for each known issue (high-severity first)
+3. **Report findings** with issue ID, severity, and description
+4. **Offer automated fixes** from reference documentation
+5. **Generate PR/gist** content on user request
+
+## Known Issues Database
+
+Before running health checks, read all reference files:
+
+```bash
+ls .claude/skills/doctor/references/*.md | grep -v README
+```
+
+Each reference file contains:
+- **Detection script**: How to detect the issue
+- **Automated fix**: Script to resolve it
+- **PR content**: Ready for upstream contribution
+- **Gist content**: For clean repo PRs
+
+Parse the YAML frontmatter to prioritize by severity (critical → high → medium → low).
+
 ## Health Check Sequence
 
-Run these checks in order and report findings:
+Run checks in this order:
+
+### Phase 1: Known Issues Detection
+
+For each reference file (sorted by severity):
+
+1. **Read reference** markdown file
+2. **Extract detection script** from `## Detection` section
+3. **Execute detection** and capture result
+4. **If detected**: Add to findings list with:
+   - Issue ID
+   - Severity
+   - Description (from `## Symptom`)
+   - Fix available (from `## Automated Fix`)
+
+### Phase 2: General Health Checks
+
+After known issues, run these general checks:
 
 ### 1. Build Consistency Check
 
@@ -268,11 +309,108 @@ For detailed container debugging, run /debug
 
 After report, offer to fix detected issues:
 
-1. **Rebuild needed:** `rm -rf dist/ && npm run build && systemctl --user restart nanoclaw`
-2. **Clean .env:** Remove unused environment variables
-3. **Cleanup containers:** `docker ps -a --filter "name=nanoclaw-" -q | xargs -r docker rm`
-4. **Restart service:** `systemctl --user restart nanoclaw` (or launchctl)
-5. **Full system restart:** Stop containers + rebuild + restart service
+1. **Apply automated fix** from reference (recommended)
+2. **Generate PR** for upstream contribution
+3. **Create gist** for manual PR from clean repo
+4. **Show manual fix** steps
+
+Example interaction:
+```
+⚠️  [CRITICAL] stale-build-artifacts detected
+    Orphaned file: dist/channels/telegram.js
+
+Options:
+  1. Fix locally (rm -rf dist/ && npm run build)
+  2. Create PR for upstream fix
+  3. Create gist for clean repo PR
+  4. Show manual steps
+
+Your choice (1/2/3/4):
+```
+
+### Option 1: Local Fix
+
+Extract `## Automated Fix` section from reference and execute with user confirmation.
+
+### Option 2: Create PR
+
+For issues with `pr_ready: true`:
+
+1. **Extract PR content** from reference:
+   - Title (from `**PR Title:**`)
+   - Description (from `**PR Description:**`)
+   - Diff (from `**Diff:**`)
+
+2. **Create git branch**:
+   ```bash
+   git checkout -b fix/issue-id
+   ```
+
+3. **Apply patch**:
+   ```bash
+   # Extract diff from reference, save to /tmp/fix.patch
+   git apply /tmp/fix.patch
+   ```
+
+4. **Commit**:
+   ```bash
+   git add -A
+   git commit -m "$(cat <<EOF
+   <PR Title from reference>
+
+   <PR Description from reference>
+
+   🤖 Generated with Claude Code
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+
+5. **Create PR** (if gh CLI available):
+   ```bash
+   git push -u origin fix/issue-id
+   gh pr create --title "<title>" --body "<description>"
+   ```
+
+   If `gh` not available, provide push command and GitHub URL.
+
+### Option 3: Create Gist
+
+For clean repo workflows:
+
+1. **Extract gist content** from reference's `## Gist Content` section
+
+2. **Create gist files**:
+   ```bash
+   mkdir -p /tmp/doctor-gist-$$
+   cd /tmp/doctor-gist-$$
+
+   # For each file in gist content
+   echo "content" > filename.md
+   ```
+
+3. **Create gist** (if gh CLI available):
+   ```bash
+   gh gist create --public *.md *.patch
+   ```
+
+   Returns gist URL.
+
+4. **Provide instructions**:
+   ```
+   ✅ Gist created: https://gist.github.com/...
+
+   To apply in clean repo:
+   1. Clone fresh: git clone <upstream-repo>
+   2. Create branch: git checkout -b fix/issue-id
+   3. Download patch: curl <gist-url>/raw/... > fix.patch
+   4. Apply: git apply fix.patch
+   5. Commit and create PR
+   ```
+
+### Option 4: Manual Steps
+
+Extract and display `## Manual Fix` section from reference.
 
 ## Integration with /debug
 

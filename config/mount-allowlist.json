@@ -1,0 +1,25 @@
+{
+  "allowedRoots": [
+    {
+      "path": "~/prj-nanoclaw",
+      "allowReadWrite": true,
+      "description": "Development projects"
+    },
+    {
+      "path": "~/repos-nanoclaw",
+      "allowReadWrite": true,
+      "description": "Git repositories"
+    },
+    {
+      "path": "~/documents/work-nanoclaw",
+      "allowReadWrite": true,
+      "description": "Work documents"
+    }
+  ],
+  "blockedPatterns": [
+    "password",
+    "secret",
+    "token"
+  ],
+  "nonMainReadOnly": true
+}
