@@ -1,105 +1,64 @@
-# NanoClaw 문서 가이드
+# NanoClaw 문서 가이드 및 핵심 개념
 
 > NanoClaw는 WhatsApp 등 메신저를 인터페이스로 사용하는 Claude AI 에이전트 플랫폼입니다.  
-> 이 문서는 시스템 전반을 빠르게 이해하기 위한 진입점입니다.
+> 이 문서는 전체 시스템의 핵심 개념을 5분 안에 빠르게 파악하기 위한 진입점입니다.
 
 ---
 
-## 빠른 개요
+## 1. NanoClaw란?
 
-NanoClaw는 **호스트(Host)** 와 **컨테이너(Container)** 두 계층으로 분리됩니다.
-
-```
-[메신저 사용자]
-     │ 메시지
-     ▼
-[Host: 오케스트레이터]  ← 항상 실행 중 (데몬)
-  - WhatsApp/Telegram 연결 유지
-  - 메시지 수신 및 라우팅
-  - DB(store/messages.db) 관리
-  - 보안 및 권한 제어
-     │ 메시지 전달
-     ▼
-[Container: Claude 에이전트]  ← 대화 시작 시 생성, 30분 유휴 시 자동 종료
-  - Claude AI API 호출
-  - 도구 실행 (Bash, 파일 읽기/쓰기 등)
-  - 허용된 폴더 범위 내에서만 동작
-     │ 응답
-     ▼
-[메신저 사용자]
-```
+WhatsApp, Telegram 등 **메신저를 통해 Claude AI와 대화**할 수 있게 해주는 개인화 플랫폼입니다.
+- 사용자가 메신저에서 `@Andy 오늘 날씨 어때?` 라고 보내면
+- NanoClaw가 메시지를 받아 Claude에게 전달하고
+- Claude의 응답을 다시 메신저로 전송함과 동시에, 데몬 환경에서 자동화 툴들을 실행합니다.
 
 ---
 
-## 📁 문서 구조
+## 2. 두 계층 구조 (Host & Container)
 
-```
-docs-gabriel/
-  README.md                   ← 이 파일 (전체 개요 및 진입점)
-  OVERVIEW.md                 ← 핵심 개념 한눈에 보기 (여기서 시작하세요)
-  
-  architecture/               ← 시스템 내부 구조 (개발자용)
-    system-architecture.md    ← 전체 아키텍처 (메시지 흐름, DB 구조, IPC)
-    container-lifecycle.md    ← 컨테이너 생성/재사용/종료 메커니즘
-    security-model.md         ← 보안 계층 구조 및 권한 모델
-  
-  guides/                     ← 실전 운영 가이드 (관리자용)
-    setup-guide.md            ← 초기 설치 및 1년 장기 토큰 설정 방법 ⭐
-    host-management.md        ← 호스트 관리: DB, 마운트 설정, 서비스 제어
-    container-skills.md       ← 컨테이너 스킬 추가하기
-    external-mounts.md        ← 호스트 폴더를 컨테이너에 연결하기
-    skills-engine.md          ← 스킬 엔진 (코드 패치 시스템)
-  
-  reference/                  ← 원본 번역 레퍼런스 (심화 학습용)
-    sdk-deep-dive.md          ← Claude Agent SDK 상세
-    security-spec.md          ← 보안 스펙 원본
-    apple-container.md        ← macOS Apple Container 설정
-    debug-checklist.md        ← 디버깅 체크리스트
-```
+### 호스트(Host) — 관리자 역할
+항상 켜져 있는 Node.js 백그라운드 서비스입니다.
+- **주요 역할**: 메신저 연결 유지, 메시지 수신/라우팅, DB(`store/messages.db`) 관리, 보안 및 권한 제어
+- **제어 수단**: `.env`, `~/.config/nanoclaw/mount-allowlist.json` 등을 통한 환경 제어
+
+### 컨테이너(Container) — 실무 에이전트
+대화 시작 시 1회성으로 생성되며(Docker/Apple Container), 30분 유휴 시 자동 종료되는 안전 격리 구역입니다.
+- **주요 역할**: 실질적인 Claude AI 호출, Bash 커맨드, 도구(파일 쓰기/검색/브라우징) 직접 실행
+- **격리와 세션 유지**: 그룹별로 완전히 분리된 컨테이너가 배정되며, 꺼졌다 켜져도 내부 세션 ID를 통해 이전 대화의 문맥을 복원합니다.
 
 ---
 
-## 🗺️ 목적별 읽기 경로
+## 3. 스킬(Skills) 확장 시스템
 
-### "NanoClaw가 뭔지 알고 싶다"
-→ **[OVERVIEW.md](./OVERVIEW.md)** 먼저 읽기
+NanoClaw에서는 복잡한 기능 설정을 별도로 두지 않고, 두 종류의 "스킬" 코드를 통해 확장성을 보장합니다.
 
-### "처음 설치하고 싶다 (신규 설치)"
-→ **[guides/setup-guide.md](./guides/setup-guide.md)** ← 여기서 시작
-
-### "설치 후 운영하고 싶다"
-→ `OVERVIEW.md` → `guides/host-management.md`
-
-### "스킬/기능을 추가하고 싶다 (메신저 사용자용)"
-→ `guides/container-skills.md`
-
-### "스킬/기능을 추가하고 싶다 (호스트 코드 수정)"
-→ `guides/skills-engine.md`
-
-### "Claude가 내 로컬 폴더를 보게 하고 싶다"
-→ `guides/external-mounts.md`
-
-### "내부 구조를 깊이 이해하고 싶다"
-→ `architecture/system-architecture.md`
-
-### "보안 구조를 이해하고 싶다"
-→ `architecture/security-model.md`
+| 종류 | 위치 | 목적 |
+| :--- | :--- | :--- |
+| **호스트/설치 스킬** | `.claude/skills/` | 프로젝트 자체 초기화(설치), 업데이트, 타 메신저 연동 등록 시 호스트 Claude 사용 용도 |
+| **컨테이너 확장 스킬** | `container/skills/` | 메신저 사용자가 Claude와 대화하며 사용할 수 있도록 새로 부여하는 도구들 (웹 검색 등) |
 
 ---
 
-## 🔑 핵심 용어
+## 4. 📁 새로운 문서 디렉터리 구조 및 읽기 경로
 
-| 용어              | 설명                                                                         |
-| :---------------- | :--------------------------------------------------------------------------- |
-| **Host**          | 항상 실행 중인 Node.js 오케스트레이터 (`src/index.ts`)                       |
-| **Container**     | 대화 요청 시 생성되는 격리된 Claude 실행 환경                                |
-| **agent-runner**  | 컨테이너 내부에서 Claude SDK를 호출하는 래퍼                                 |
-| **Group**         | 등록된 메신저 대화방 (각자 독립 컨테이너)                                    |
-| **Main Group**    | 관리자 권한을 가진 특별 그룹                                                 |
-| **IPC**           | 호스트-컨테이너 간 파일 기반 통신                                            |
-| **Skills**        | 기능 확장 단위 (호스트용 `.claude/skills/` / 컨테이너용 `container/skills/`) |
-| **Skills Engine** | 호스트 코드를 패칭해 기능을 추가하는 3-way merge 시스템                      |
+중복을 제거하고 주제별로 핵심 내용을 집중 구성한 디렉터리 구조입니다. 필요한 목적에 따라 문서를 탐색하세요.
 
----
+### 🚀 `01-getting-started/` (시작하기)
+- `setup-guide.md` — 초기 설치 및 1년 장기 토큰 설정 방법 (신규 사용자 필수)
+- `requirements.md` — 프로젝트 존재 이유 및 설계 철학 레퍼런스
 
-*마지막 업데이트: 2026-02-25 (guides/setup-guide.md 추가)*
+### 🏗️ `02-architecture/` (아키텍처 및 내부 구조)
+- `system-architecture.md` — 메시지 흐름, DB 구조, IPC, Agent-runner 실행 등 전체 기술적 아키텍처
+- `conversation-memory.md` — Claude 기억 연상 체계, 그룹별/전역 컨텍스트 보존 메커니즘
+- `volume-mounts.md` — 호스트-컨테이너 간 파일 영속성 보존 및 외부 볼륨 추가 마운트 원리
+
+### 🔒 `03-security/` (보안 모델)
+- `security-model.md` — 컨테이너 샌드박스의 접근 권한 및 차단 프로세스 (Apple Container 관련 포함)
+
+### 🛠️ `04-extensions/` (기능 확장)
+- `skills-engine.md` — 스킬 시스템 동작 원리 및 직접 기능 추가하기
+- `mcp-tools.md` — MCP(Model Context Protocol) 도구 명세
+
+### ⚙️ `05-operations/` (운영 및 문제 해결)
+- `host-management.md` — 호스트 시스템 런타임 제어 및 데몬 관리
+- `troubleshooting/` — Duplicate Containers, Timeout 등 에러 슈팅 케이스 모음

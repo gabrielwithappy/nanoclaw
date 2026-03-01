@@ -43,6 +43,11 @@ When you learn something important:
 - Split files larger than 500 lines into folders
 - Keep an index in your memory for the files you create
 
+## Rules Reference
+
+When performing specific tasks, you must FIRST read the corresponding rule file from the `rules/` directory (if it exists) using the file read tools:
+- **When creating or modifying Obsidian notes:** Read `rules/obsidian.md` for formatting and structuring instructions.
+
 ## WhatsApp Formatting (and other messaging apps)
 
 Do NOT use markdown headings (##) in WhatsApp messages. Only use:

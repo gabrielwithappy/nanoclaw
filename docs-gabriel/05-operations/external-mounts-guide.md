@@ -234,10 +234,38 @@ Mount forced to read-only for non-main group
 
 ---
 
+## NanoClaw 기본 볼륨 마운트 구조 및 컨테이너 적용 방식
+
+NanoClaw는 사용자가 임의로 추가하는 외부 마운트 외에도, 시스템 운영을 위해 다음과 같은 코어 디렉터리들을 컨테이너 시작 시 **Bind Mount**를 통해 자동으로 연결합니다.
+
+### 1. 기본 마운트되는 필수 볼륨들
+
+| 마운트 목적 | 호스트(Host) 로컬 경로 | 컨테이너 (Container) 내부 경로 | 권한 제한 여부 |
+| :--- | :--- | :--- | :--- |
+| **프로젝트 원본** | `{projectRoot}/` | `/workspace/project/` | **읽기 전용** (메인 관리자 그룹만) |
+| **그룹(채팅방) 작업 공간** | `groups/{folder}/` | `/workspace/group/` | **읽기/쓰기** (그룹별 격리) |
+| **전역 시스템 정책** | `groups/global/` | `/workspace/global/` | **읽기 전용** (비메인 그룹) |
+| **세션 데이터 (기억)** | `data/sessions/{folder}/.claude/` | `/home/node/.claude/` | **읽기/쓰기** (고유 컨텍스트) |
+| **에이전트 러너 소스** | `data/sessions/{folder}/agent-runner-src/` | `/app/src/` | **읽기/쓰기** (그룹별 재빌드) |
+| **프로세스 통신 (IPC)** | `data/ipc/{folder}/` | `/workspace/ipc/` | **읽기/쓰기** (호스트↔컨테이너 통신) |
+
+위의 기본 볼륨 패키지와 함께 사용자가 1~3단계를 걸쳐 추가한 외부 마운트(`additionalMounts`)들이 최종적으로 병합되어 실행 중인 컨테이너에 전달됩니다.
+
+### 2. 컨테이너에 외부 볼륨을 적용하는 기술적 방식
+NanoClaw 데몬(Host 오케스트레이터)은 메신저 메시지가 올 때마다 일회성으로 컨테이너를 구동(`docker run`)하는데, 보안과 OS 호환성을 위해 아래 두 가지 마운트 플래그를 변칙 적용합니다.
+
+- **표준 Docker 볼륨 마운트 (`-v`)**:
+  일반적인 읽기/쓰기(R/W) 권한이 필요한 경우, 도커의 표준인 `-v /host/path:/container/path` 플래그를 사용하여 양방향 변경이 가능하도록 연결합니다.
+  
+- **Apple Container 호환성을 위한 읽기 전용 마운트 (`--mount`)**:
+  단순 읽기 전용(Read-Only) 마운트의 경우, macOS 네이티브 가상화 기술인 **Apple Container**에서 기존 Docker의 `:ro` 접미사가 정상 동작하지 않는 버그를 우회하기 위해 `--mount type=bind,source=/host/path,target=/container/path,readonly` 라는 정석적인 Bind mount 명령어를 강제하여 크로스 OS 호환성과 권한 격리를 확보했습니다.
+
+---
+
 ## 관련 문서
 
 - [`host-management.md`](./host-management.md) — 호스트 관리 전반
 - [`../reference/volume-mounts-detail.md`](../reference/volume-mounts-detail.md) — 전체 마운트 구조
 - [`../architecture/security-model.md`](../architecture/security-model.md) — 보안 구조 상세
 
-*업데이트: 2026-02-28*
+*업데이트: 2026-03-01*

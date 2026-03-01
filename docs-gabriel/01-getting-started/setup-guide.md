@@ -210,7 +210,7 @@ NanoClaw는 `claude setup-token`으로 발급한 1년짜리 토큰을 `.env`에 
 
 ## 관련 문서
 
-- [호스트 관리 가이드](./host-management.md)
-- [외부 마운트 설정](./external-mounts.md)
-- [Skills 엔진 가이드](./skills-engine.md)
+- [호스트 관리 가이드](../05-operations/host-management.md)
+- [외부 마운트 설정](../05-operations/external-mounts-guide.md)
+- [Skills 엔진 가이드](../04-extensions/skills-engine.md)
 - [NanoClaw 공식 README](../README.md)
