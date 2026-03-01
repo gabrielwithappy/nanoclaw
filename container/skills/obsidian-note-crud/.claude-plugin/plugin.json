@@ -1,0 +1,6 @@
+{
+  "name": "obsidian-note-crud",
+  "version": "1.0.0",
+  "description": "Obsidian 노트의 생성, 읽기, 수정, 삭제, 검색 작업을 수행합니다. 새 노트 생성, 노트 내용 읽기, 내용 추가, 노트 삭제, Vault 텍스트 검색, 태그 관리 시 사용합니다. 모든 노트 파일 작업을 위한 Python 스크립트를 제공합니다.",
+  "type": "skill"
+}
