@@ -56,7 +56,9 @@ NanoClaw에서는 복잡한 기능 설정을 별도로 두지 않고, 두 종류
 - `security-model.md` — 컨테이너 샌드박스의 접근 권한 및 차단 프로세스 (Apple Container 관련 포함)
 
 ### 🛠️ `04-extensions/` (기능 확장)
-- `skills-engine.md` — 스킬 시스템 동작 원리 및 직접 기능 추가하기
+- `skills-spec.md` — 전체 시스템 명세 (아키텍처, 설정, 메모리, 세션, 스케줄링, MCP, 컨테이너 스킬 등)
+- `container-skills.md` — 컨테이너 스킬 추가 및 관리 실용 가이드 (실습 위주)
+- `skills-engine.md` — 호스트 스킬 시스템 동작 원리 (호스트 레벨 기능 추가)
 - `mcp-tools.md` — MCP(Model Context Protocol) 도구 명세
 
 ### ⚙️ `05-operations/` (운영 및 문제 해결)

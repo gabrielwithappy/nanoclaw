@@ -15,8 +15,9 @@ WhatsApp을 통해 자유롭게 대화할 수 있고, 대화 채널별로 기억
 7. [주요 명령어 종류 (Commands)](#commands)
 8. [자동 예약 스케줄 작업 (Scheduled Tasks)](#scheduled-tasks)
 9. [응용 MCP 서버들 (MCP Servers)](#mcp-servers)
-10. [배포 및 구동 방법 (Deployment)](#deployment)
-11. [보안상 주의사항 (Security Considerations)](#security-considerations)
+10. [컨테이너 스킬 시스템 (Container Skills System)](#container-skills-system)
+11. [배포 및 구동 방법 (Deployment)](#deployment)
+12. [보안상 주의사항 (Security Considerations)](#security-considerations)
 
 ---
 
@@ -474,6 +475,107 @@ Claude봇: [mcp__nanoclaw__schedule_task 기능 호출]
 | `resume_task`   | 멈춘거 다시 가동                                                       |
 | `cancel_task`   | 예약 취소 및 소각                                                      |
 | `send_message`  | 몰래 들어와 작업 다하고 나서 마지막에 방에다 자랑할 때 (챗 쏴줄 때)    |
+
+---
+
+## 컨테이너 스킬 시스템 (Container Skills System)
+
+NanoClaw는 그룹(채팅방)별로 격리된 컨테이너 환경에서 에이전트가 실행되며, 각 그룹마다 **독립적인 스킬(Skills) 세트**를 가질 수 있습니다.
+
+> **참고:** 실제 스킬 추가 및 관리 방법은 [컨테이너 스킬 추가하기](./container-skills.md) 문서를 참조하세요. 여기서는 시스템 아키텍처 관점에서 스킬이 어떻게 동작하는지 설명합니다.
+
+### 스킬 동기화 메커니즘 (Skill Synchronization Mechanism)
+
+컨테이너가 시작될 때마다 호스트의 `container/skills/` 디렉터리에 있는 모든 스킬들이 해당 그룹의 `.claude/skills/` 디렉터리로 자동 동기화됩니다.
+
+**동기화 흐름:**
+```
+container/skills/                      → data/sessions/{group}/.claude/skills/
+├── agent-browser/                       ├── agent-browser/
+│   └── SKILL.md                         │   └── SKILL.md
+├── defuddle/                            ├── defuddle/
+│   └── SKILL.md                         │   └── SKILL.md
+└── obsidian-cli/                        └── obsidian-cli/
+    └── SKILL.md                             └── SKILL.md
+```
+
+**주요 특징:**
+1. **자동 동기화**: 컨테이너가 구동될 때마다 `container/skills/`의 내용이 해당 그룹의 세션 디렉터리로 복사됩니다
+2. **그룹별 격리**: 각 그룹은 `data/sessions/{group-folder}/.claude/` 경로에 자신만의 스킬 복사본을 가집니다
+3. **컨테이너 마운트**: 그룹별 세션 디렉터리가 컨테이너 내부의 `/home/node/.claude/`로 마운트됩니다
+
+### 스킬 구조 (Skill Structure)
+
+각 스킬은 `container/skills/{skill-name}/` 디렉터리 안에 최소한 다음 파일을 포함합니다:
+
+```
+container/skills/agent-browser/
+├── SKILL.md              # 스킬의 주요 명세 및 사용법
+└── (기타 스킬 관련 파일들)
+```
+
+### 그룹별 커스터마이징 (Per-Group Customization)
+
+**시나리오 1: 모든 그룹에 공통 스킬 제공**
+- `container/skills/`에 스킬을 추가하면 모든 그룹의 컨테이너가 해당 스킬을 사용할 수 있습니다
+
+**시나리오 2: 특정 그룹만 스킬 제외**
+- 특정 그룹의 `data/sessions/{group}/.claude/skills/{skill-name}/` 디렉터리를 삭제하면 해당 그룹은 그 스킬을 사용할 수 없습니다
+- 단, 다음 컨테이너 재시작 시 다시 동기화되므로 영구 제외를 위해서는 별도 처리가 필요합니다
+
+**시나리오 3: 그룹별로 스킬 버전 다르게 운영**
+- 동기화 후 특정 그룹의 `.claude/skills/` 내용을 수정하면 해당 그룹만 커스텀 버전을 사용할 수 있습니다
+- 이는 그룹별 agent-runner 소스 커스터마이징과 유사한 패턴입니다
+
+### 기본 제공 스킬들 (Built-in Skills)
+
+| 스킬 이름           | 설명                                           |
+| ------------------- | ---------------------------------------------- |
+| `agent-browser`     | 브라우저 자동화 도구 (웹 스크래핑, 스크린샷)   |
+| `defuddle`          | 코드/텍스트 정리 및 난독화 해제 도구           |
+| `json-canvas`       | JSON Canvas 형식 처리 도구                     |
+| `obsidian-bases`    | Obsidian 데이터베이스(Dataview) 지원 도구      |
+| `obsidian-cli`      | Obsidian CLI 도구 (노트 생성/검색/링크)        |
+| `obsidian-markdown` | Obsidian Markdown 확장 문법 지원               |
+
+### 스킬 추가 방법 (Adding New Skills)
+
+**1단계: 스킬 디렉터리 생성**
+```bash
+mkdir -p container/skills/my-custom-skill
+```
+
+**2단계: SKILL.md 작성**
+```bash
+cat > container/skills/my-custom-skill/SKILL.md << 'EOF'
+# My Custom Skill
+
+이 스킬은 [기능 설명]을 제공합니다.
+
+## 사용법
+
+[사용 예시 및 명령어]
+EOF
+```
+
+**3단계: 호스트 재시작 또는 컨테이너 재생성**
+- 기존 실행 중인 컨테이너는 종료됩니다
+- 다음 메시지가 도착하여 새 컨테이너가 생성될 때 스킬이 자동 동기화됩니다
+
+### 스킬과 CLAUDE.md의 관계
+
+스킬은 에이전트에게 **도구와 역량**을 제공하지만, `CLAUDE.md`는 **성격과 기억**을 제공합니다:
+
+- **스킬 (`container/skills/`)**: "어떻게 할 수 있는가?" (Capabilities)
+- **CLAUDE.md (`groups/{folder}/CLAUDE.md`)**: "누구인가? 무엇을 기억하는가?" (Identity & Memory)
+
+둘은 상호보완적이며, 스킬을 통해 제공된 도구를 CLAUDE.md의 컨텍스트와 기억을 바탕으로 사용합니다.
+
+### 주의사항 (Important Notes)
+
+1. **자동 덮어쓰기**: 컨테이너 시작 시 `container/skills/` → `.claude/skills/` 방향으로 복사되므로, `.claude/skills/`의 수정사항은 호스트 재시작 시 초기화될 수 있습니다
+2. **agent-runner 소스와 유사**: 스킬 시스템은 `agent-runner/src/` 복사 메커니즘과 비슷한 패턴을 사용합니다 (그룹별 격리 + 초기 동기화)
+3. **보안**: 모든 그룹이 동일한 스킬을 공유하므로, 보안에 민감한 스킬은 그룹별 마운트 권한과 함께 신중히 설계해야 합니다
 
 ---
 
