@@ -88,15 +88,14 @@ Implementation:
 
 ## After Changes
 
-Always tell the user:
+Always tell the user to rebuild and safely restart the system to apply changes:
 ```bash
-# Rebuild and restart
+# Rebuild
 npm run build
-# macOS:
-launchctl unload ~/Library/LaunchAgents/com.nanoclaw.plist
-launchctl load ~/Library/LaunchAgents/com.nanoclaw.plist
-# Linux:
-# systemctl --user restart nanoclaw
+
+# Linux (Safe Restart to prevent zombie containers):
+docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true
+systemctl --user restart nanoclaw
 ```
 
 ## Example Interaction
