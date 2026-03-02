@@ -128,6 +128,10 @@ export class TelegramChannel implements Channel {
         return;
       }
 
+      // Detect bot messages: check if sender is the bot itself
+      // In Telegram, bot can send messages and also see its own messages in groups
+      const isBotMessage = ctx.from?.id === ctx.me?.id;
+
       // Deliver message — startMessageLoop() will pick it up
       this.opts.onMessage(chatJid, {
         id: msgId,
@@ -137,10 +141,11 @@ export class TelegramChannel implements Channel {
         content,
         timestamp,
         is_from_me: false,
+        is_bot_message: isBotMessage,
       });
 
       logger.info(
-        { chatJid, chatName, sender: senderName },
+        { chatJid, chatName, sender: senderName, isBotMessage },
         'Telegram message stored',
       );
     });
@@ -159,6 +164,9 @@ export class TelegramChannel implements Channel {
         'Unknown';
       const caption = ctx.message.caption ? ` ${ctx.message.caption}` : '';
 
+      // Detect bot messages
+      const isBotMessage = ctx.from?.id === ctx.me?.id;
+
       this.opts.onChatMetadata(chatJid, timestamp);
       this.opts.onMessage(chatJid, {
         id: ctx.message.message_id.toString(),
@@ -168,6 +176,7 @@ export class TelegramChannel implements Channel {
         content: `${placeholder}${caption}`,
         timestamp,
         is_from_me: false,
+        is_bot_message: isBotMessage,
       });
     };
 
