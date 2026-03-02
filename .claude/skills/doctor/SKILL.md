@@ -335,6 +335,20 @@ The audit checks:
 - Enabling read-only enforcement for non-main groups
 - Reviewing group registrations
 
+### 10. Mount Status Analysis
+
+**Problem:** Groups missing required mounts or mounts pointing to missing directories, causing data isolation issues.
+
+```bash
+# Execute the mount status detection script
+node .claude/skills/doctor/scripts/check-mounts.cjs
+
+# Show summary of generated references
+cat .claude/skills/doctor/references/mount-status.json | grep -A 2 -B 2 "mounts"
+```
+
+This exports all JID-specific mount situations into `.claude/skills/doctor/references/mount-status.json` for easy review.
+
 ## Health Check Report Format
 
 After running all checks, provide a summary:
