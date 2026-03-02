@@ -3,9 +3,13 @@ id: security-audit
 severity: medium
 description: Security audit for container mounts, environment variables, and group permissions
 pr_ready: false
+gist_safe: false
+upstream_safe: false
 ---
 
 # Security Audit for NanoClaw
+
+**⚠️ PRIVACY WARNING**: This audit displays user-specific configuration including paths, environment variable names, and group information. This is intentional for local debugging but should NEVER be shared publicly or included in gists/PRs. The `pr_ready: false` setting prevents automatic sharing.
 
 ## Symptom
 

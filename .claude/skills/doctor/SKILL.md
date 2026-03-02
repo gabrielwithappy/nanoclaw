@@ -287,6 +287,8 @@ fi
 
 ### 9. Security Audit
 
+**⚠️ PRIVACY NOTE**: This audit displays user-specific configuration (paths, env vars, group info) on the user's terminal only. It is NOT shared via gist/PR (`pr_ready: false`). Output should remain local.
+
 **Problem:** Users need visibility into security configuration - mounted directories, environment variables, and group permissions.
 
 This audit provides a comprehensive security overview:
