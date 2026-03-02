@@ -1,56 +1,56 @@
 ---
 name: architecture-review
 description: >
-  NanoClaw 커스터마이징의 아키텍처 적합성을 검증합니다. 코어 소스 직접 수정 여부,
-  스킬 시스템 준수 여부, 세션/마운트 무결성, 업스트림 정합성, PR 규격 적합성을 검사합니다.
-  "아키텍처 리뷰", "architecture review", "구조 검사", "정합성 검사" 등에 반응합니다.
+  Validates the architectural integrity of NanoClaw customizations. Checks for direct core source modifications,
+  skill system compliance, session/mount integrity, upstream alignment, and PR readiness.
+  Triggers on "architecture review", "structural check", "alignment check", etc.
 ---
 
 # NanoClaw Architecture Review
 
-NanoClaw를 커스터마이징할 때, 변경 사항이 업스트림(upstream) 업데이트와 충돌하지 않는지, 프로젝트의 설계 철학을 해치지 않는지 사전에 검증하는 아키텍처 리뷰 스킬입니다.
+An architecture review skill that validates whether customizations conflict with upstream updates or violate the project's design philosophy before and after making changes.
 
-## 핵심 원칙 (CONTRIBUTING.md 기반)
+## Core Principles (based on CONTRIBUTING.md)
 
-NanoClaw 프로젝트의 아키텍처 판단 기준은 다음과 같습니다:
+NanoClaw's architectural criteria are as follows:
 
-- **소스 수정(src/)으로 허용되는 것**: 버그 수정, 보안 수정, 단순화, 코드 줄이기
-- **소스 수정(src/)으로 허용되지 않는 것**: 기능 추가, 호환성, 개선사항 → 이것들은 반드시 스킬(Skills)로 해야 함
-- **스킬 PR은 소스 파일을 수정하면 안 됨**: 스킬은 "Claude에게 변환 방법을 지시하는 마크다운 명세"일 뿐, 미리 빌드된 코드가 아님
+- **Accepted source modifications (src/)**: Bug fixes, security fixes, simplifications, reducing code.
+- **Rejected source modifications (src/)**: Features, capabilities, compatibility, enhancements. These must be implemented as Skills.
+- **Skill PRs must not modify source files**: A skill is a "Markdown specification instructing Claude how to transform", not pre-built code.
 
-## 사용 시점
+## When to Use
 
-| 시점 | 설명 |
+| Timing | Description |
 |:---|:---|
-| **커스터마이징 전** | 현재 코드가 업스트림 대비 얼마나 벌어져 있는지 확인 |
-| **커스터마이징 후** | 방금 한 수정이 아키텍처 적합한지 검증 |
-| **문제 진단 시** | `/doctor`와 함께 구조적 결함(깨진 링크, 고아 파일) 탐색 |
-| **PR 작성 전** | 업스트림 기여 적합 여부 판단 |
+| **Before Customizing** | Check how far the current code has drifted from upstream |
+| **After Customizing** | Validate whether the recent changes are architecturally sound |
+| **During Troubleshooting** | Use with `/doctor` to explore structural defects (broken links, orphan files) |
+| **Before Creating PRs** | Determine if the changes are suitable for upstream contribution |
 
-## 리뷰 워크플로우
+## Review Workflow
 
-### Step 1: 레퍼런스 파일 로딩
+### Step 1: Load Reference Files
 
-먼저 아키텍처 판단 기준을 읽어들입니다:
+First, read the architecture criteria:
 
 ```bash
 cat .claude/skills/architecture-review/references/upstream-boundaries.md
 cat .claude/skills/architecture-review/references/review-checklist.md
 ```
 
-### Step 2: 업스트림 정합성 검사 (Critical)
+### Step 2: Upstream Alignment Check (Critical)
 
-업스트림 원본 대비 코어 소스 파일이 수정되었는지 확인합니다. 이 검사가 가장 중요합니다.
+Check if core source files have been modified compared to the upstream original. This is the most important check.
 
 ```bash
-# upstream 리모트가 설정되어 있는지 확인
+# Check if upstream remote is configured
 git remote -v | grep upstream || echo "WARNING: upstream remote not configured"
 
-# upstream이 있으면 코어 파일의 변경 사항을 비교
+# If upstream exists, compare core file changes
 if git remote -v | grep -q upstream; then
   git fetch upstream main --quiet 2>/dev/null
   
-  # src/ 디렉터리의 변경 파일 목록
+  # List of changed files in src/ directory
   CORE_CHANGES=$(git diff --name-only upstream/main -- src/ container/agent-runner/ container/Dockerfile 2>/dev/null)
   
   if [ -n "$CORE_CHANGES" ]; then
@@ -62,9 +62,9 @@ if git remote -v | grep -q upstream; then
 fi
 ```
 
-**upstream이 없는 경우의 대안 검사:**
+**Alternative check if upstream is missing:**
 ```bash
-# git log에서 src/ 수정 이력 확인
+# Check modification history of src/ in git log
 RECENT_SRC_CHANGES=$(git log --oneline -20 -- src/ container/agent-runner/ | head -10)
 if [ -n "$RECENT_SRC_CHANGES" ]; then
   echo "INFO: Recent commits touching core source:"
@@ -72,17 +72,17 @@ if [ -n "$RECENT_SRC_CHANGES" ]; then
 fi
 ```
 
-### Step 3: 스킬 시스템 준수 검사 (Critical)
+### Step 3: Skill System Compliance Check (Critical)
 
-기능 추가가 스킬(Skills) 시스템을 통해 이루어졌는지 확인합니다.
+Verify that new features were implemented via the Skills system.
 
 ```bash
-# 최근 커밋에서 src/를 수정하면서 동시에 .claude/skills/ 를 수정하지 않은 경우 = 의심
+# Commits modifying src/ without modifying .claude/skills/ at the same time = suspicious
 SUSPECT_COMMITS=$(git log --oneline -20 -- src/ | while read hash msg; do
   SKILL_TOUCH=$(git diff-tree --no-commit-id --name-only -r "$hash" -- '.claude/skills/' 'container/skills/' 2>/dev/null)
   SRC_TOUCH=$(git diff-tree --no-commit-id --name-only -r "$hash" -- 'src/' 2>/dev/null)
   if [ -n "$SRC_TOUCH" ] && [ -z "$SKILL_TOUCH" ]; then
-    # src/만 수정하고 skills는 건드리지 않은 커밋
+    # Commits that touched src/ but not skills
     echo "$hash $msg"
   fi
 done)
@@ -91,34 +91,34 @@ if [ -n "$SUSPECT_COMMITS" ]; then
   echo "WARNING: Commits modifying core src/ without corresponding skill:"
   echo "$SUSPECT_COMMITS"
   echo ""
-  echo "CONTRIBUTING.md 원칙: 기능 추가는 스킬로, 소스 수정은 버그/보안/단순화만 허용"
+  echo "CONTRIBUTING.md rule: Features via skills, source mods restricted to bug/security/simplification"
 else
   echo "PASS: Skill system compliance OK"
 fi
 ```
 
-### Step 4: 세션/마운트 무결성 검사 (High)
+### Step 4: Session/Mount Integrity Check (High)
 
-세션 디렉터리 내 깨진 심볼릭 링크, 고아(orphan) 파일을 탐지합니다.
+Detect broken symbolic links and orphan files in the session directory.
 
 ```bash
-# 깨진 심볼릭 링크 찾기
+# Find broken symbolic links
 BROKEN_LINKS=$(find data/sessions/ -type l ! -exec test -e {} \; -print 2>/dev/null | grep -v "debug/latest")
 if [ -n "$BROKEN_LINKS" ]; then
   echo "HIGH: Broken symbolic links found in session directories:"
   echo "$BROKEN_LINKS"
   echo ""
-  echo "FIX: rm 명령으로 깨진 링크 삭제 후 서비스 재시작 시 자동 재생성됩니다."
+  echo "FIX: Remove broken links with 'rm'. They will be automatically regenerated on service restart."
 else
   echo "PASS: No broken symbolic links"
 fi
 
-# 그룹 설정 파일과 실제 마운트 대상의 일치 검사
+# Verify alignment between group config files and actual mount targets
 for config_file in config/groups/*.json; do
   [ -f "$config_file" ] || continue
   GROUP_NAME=$(basename "$config_file" .json)
   
-  # additionalMounts의 hostPath가 실제로 존재하는지 확인
+  # Check if additionalMounts hostPath actually exists
   HOST_PATHS=$(grep -oP '"hostPath"\s*:\s*"\K[^"]+' "$config_file" 2>/dev/null)
   for hp in $HOST_PATHS; do
     RESOLVED=$(eval echo "$hp")
@@ -129,12 +129,12 @@ for config_file in config/groups/*.json; do
 done
 ```
 
-### Step 5: 범용성 검사 (Medium)
+### Step 5: Portability Check (Medium)
 
-로컬 환경에 의존하는 하드코딩된 경로나 설정이 코어 소스에 들어가지 않았는지 확인합니다.
+Check if hardcoded paths or settings dependent on the local environment have been introduced into the core source.
 
 ```bash
-# src/ 내부에 하드코딩된 로컬 경로 검출
+# Detect hardcoded local paths in src/
 HARDCODED=$(grep -rn "/home/" src/ --include="*.ts" 2>/dev/null | grep -v "node_modules" | grep -v "/home/node/")
 if [ -n "$HARDCODED" ]; then
   echo "MEDIUM: Hardcoded local paths found in core source:"
@@ -144,38 +144,38 @@ else
 fi
 ```
 
-### Step 6: PR 적합성 판단 (Medium)
+### Step 6: PR Readiness Check (Medium)
 
-현재 변경 사항이 업스트림 PR로 올릴 수 있는 성격인지 판단합니다.
+Determine if current changes are suitable for an upstream PR.
 
-**PR에 적합한 수정 (CONTRIBUTING.md 기준):**
-- 버그 수정 (fix)
-- 보안 수정 (security)
-- 코드 단순화/줄이기 (simplification)
-- 새로운 스킬 추가 (`.claude/skills/` 내 파일만 변경)
+**Modifications suitable for PR (based on CONTRIBUTING.md):**
+- Bug fixes (fix)
+- Security fixes (security)
+- Code simplification/reduction (simplification)
+- Adding new skills (only files in `.claude/skills/` changed)
 
-**PR에 부적합한 수정:**
-- 기능 추가를 위한 `src/` 직접 수정
-- 개인 환경 특화 설정이 코어에 포함된 경우
-- 호환성 확장을 위한 코어 변경
+**Modifications unsuitable for PR:**
+- Direct modification of `src/` to add features
+- Personal environment specific configurations embedded in core
+- Core changes for compatibility extensions
 
 ```bash
-# 스테이징된 변경을 분석
+# Analyze staged changes
 STAGED_SRC=$(git diff --cached --name-only -- src/ container/agent-runner/ 2>/dev/null)
 STAGED_SKILLS=$(git diff --cached --name-only -- .claude/skills/ container/skills/ 2>/dev/null)
 
 if [ -n "$STAGED_SKILLS" ] && [ -z "$STAGED_SRC" ]; then
-  echo "PR_READY: Skills-only change → upstream PR 적합"
+  echo "PR_READY: Skills-only change → Suitable for upstream PR"
 elif [ -n "$STAGED_SRC" ]; then
-  echo "PR_REVIEW_NEEDED: Core source modified → 버그/보안/단순화인지 직접 판단 필요"
+  echo "PR_REVIEW_NEEDED: Core source modified → Requires manual check if bug/security/simplification"
   echo "Modified files:"
   echo "$STAGED_SRC"
 fi
 ```
 
-## 리포트 포맷
+## Report Format
 
-모든 검사가 완료되면 아래 형식의 리포트를 생성합니다:
+Once all checks are complete, generate a report in the following format:
 
 ```
 🏛️ NanoClaw Architecture Review Report
@@ -199,18 +199,18 @@ fi
   ...
 
 💡 Architecture Tips
-  - 기능 추가 → `container/skills/` 또는 `.claude/skills/`를 이용하세요
-  - 코어 수정이 필요 → 먼저 PR로 upstream에 기여할지 판단하세요
-  - 업데이트 충돌 위험 → `/update` 전에 반드시 이 리뷰를 실행하세요
+  - To add features → use `container/skills/` or `.claude/skills/`
+  - If core modification is needed → determine first if it will be contributed to upstream via PR
+  - Risk of update conflicts → ensure you run this review before running `/update`
 ```
 
-## 다른 스킬과의 연동
+## Integration with Other Skills
 
-### customize와 연동
-`/customize` 실행 시 이 리뷰를 먼저 확인하여 현재 코드 상태를 파악한 뒤 커스터마이징을 진행합니다. 커스터마이징 완료 후에도 리뷰를 다시 실행하여 적합성을 재검증합니다.
+### Integration with customize
+When running `/customize`, first run this review to understand the current code state before proceeding. Re-run the review after customization is complete to validate architectural soundness.
 
-### doctor와 연동
-`/doctor` 실행 시 "Phase 2: General Health Checks"에서 본 스킬의 Step 4(세션/마운트 무결성 검사)를 포함시켜 깨진 심볼릭 링크, 고아 파일 등의 구조적 결함을 함께 탐지합니다.
+### Integration with doctor
+When running `/doctor`, Step 4 (Session/Mount Integrity Check) of this skill is included in "Phase 2: General Health Checks" to detect structural defects like broken symlinks or orphan files.
 
-### update와 연동
-`/update` 실행 전에 본 스킬을 실행하면, 업스트림 대비 코어 파일이 얼마나 벌어져 있는지 사전에 파악하여 충돌 위험도를 예측할 수 있습니다.
+### Integration with update
+Running this skill before `/update` helps gauge the risk of conflicts by predicting how much the core files have drifted from upstream.
