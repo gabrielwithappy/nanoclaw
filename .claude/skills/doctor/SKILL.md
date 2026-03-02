@@ -285,6 +285,54 @@ if [ -f logs/nanoclaw.log ]; then
 fi
 ```
 
+### 9. Security Audit
+
+**Problem:** Users need visibility into security configuration - mounted directories, environment variables, and group permissions.
+
+This audit provides a comprehensive security overview:
+
+- **Mount Allowlist**: Shows which paths are allowed and blocked
+- **Group Mounts**: Lists all additional mounts per group, validates paths exist
+- **Sensitive File Detection**: Scans mounted directories for SSH keys, credentials, .env files, cloud credentials
+- **Environment Variables**: Lists configured variables (values hidden), identifies sensitive keys
+- **Permission Analysis**: Documents main vs non-main group privileges
+- **Database Audit**: Lists registered groups and checks for configuration gaps
+
+**Important:** Run the security audit from the detection script in [references/security-audit.md](.claude/skills/doctor/references/security-audit.md):
+
+```bash
+# Extract the detection script from security-audit.md and execute it
+awk '/^```bash$/,/^```$/ {if (!/^```/) print}' .claude/skills/doctor/references/security-audit.md > /tmp/security-audit.sh
+chmod +x /tmp/security-audit.sh
+/tmp/security-audit.sh
+```
+
+The audit checks:
+
+1. Mount allowlist configuration (`~/.config/nanoclaw/mount-allowlist.json`)
+2. Group-specific additional mounts from `config/groups/*.json`
+3. Sensitive file detection in mounted paths
+4. Environment variables from `.env` (keys only, values hidden)
+5. Default built-in mounts (documented for transparency)
+6. Main group special privileges
+7. Registered groups in database
+8. Security recommendations
+
+**Output includes:**
+
+- ✓ Items that are properly configured
+- ⚠️  Warnings about sensitive files or misconfigurations
+- ✗ Errors for missing required configuration
+- ℹ️  Informational notes about security model
+
+**Auto-recommendations:** The audit provides actionable steps for:
+
+- Creating/updating mount allowlist
+- Fixing `.env` file permissions (should be 600 or 400)
+- Removing unnecessary sensitive mounts
+- Enabling read-only enforcement for non-main groups
+- Reviewing group registrations
+
 ## Health Check Report Format
 
 After running all checks, provide a summary:
@@ -305,6 +353,7 @@ Containers: [OK/ZOMBIES_DETECTED/IMAGE_MISSING]
 Database: [OK/INCONSISTENT]
 Network: [OK/DEGRADED]
 Architecture Integrity: [OK/BROKEN_SYMLINKS/ORPHAN_SESSIONS]
+Security Audit: [OK/WARNINGS_DETECTED/CRITICAL_ISSUES]
 
 Recommendations:
 1. [Action 1]
@@ -312,6 +361,7 @@ Recommendations:
 ...
 
 For detailed container debugging, run /debug
+For security configuration details, review the Security Audit section above
 ```
 
 ## Auto-Fix Options
