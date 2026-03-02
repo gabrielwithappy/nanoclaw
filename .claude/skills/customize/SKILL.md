@@ -9,10 +9,12 @@ This skill helps users add capabilities or modify behavior. Use AskUserQuestion 
 
 ## Workflow
 
-1. **Understand the request** - Ask clarifying questions
-2. **Plan the changes** - Identify files to modify
-3. **Implement** - Make changes directly to the code
-4. **Test guidance** - Tell user how to verify
+1. **Architecture pre-check** - Before planning, read `.claude/skills/architecture-review/references/upstream-boundaries.md` and determine whether the requested change touches core source (`src/`, `container/agent-runner/`) or user-extension areas (`.claude/skills/`, `container/skills/`, `groups/`, `config/`). If core source modification is needed, warn the user about upstream update risk and recommend skill-based alternatives when possible. Reference `CONTRIBUTING.md`: features must be skills; only bug/security/simplification changes are accepted as source modifications.
+2. **Understand the request** - Ask clarifying questions
+3. **Plan the changes** - Identify files to modify, noting which are core vs extension
+4. **Implement** - Make changes directly to the code
+5. **Architecture post-check** - After implementation, run the architecture review checks from `.claude/skills/architecture-review/references/review-checklist.md` against modified files. Report any upstream alignment issues or structural violations to the user.
+6. **Test guidance** - Tell user how to verify
 
 ## Key Files
 

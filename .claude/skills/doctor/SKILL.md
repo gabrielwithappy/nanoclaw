@@ -58,7 +58,15 @@ For each reference file (sorted by severity):
 
 ### Phase 2: General Health Checks
 
-After known issues, run these general checks:
+After known issues, run these general checks.
+
+**Important:** Before running the checks below, also read and execute the architecture integrity checks from `.claude/skills/architecture-review/references/review-checklist.md`. Specifically run:
+
+- **CHECK-03 (Broken Symlinks)**: Detect broken symbolic links in `data/sessions/` that cause skill sync failures (e.g., the `ERR_FS_CP_DIR_TO_NON_DIR` error).
+- **CHECK-04 (Orphan Sessions)**: Find session directories for groups no longer registered in the database.
+- **CHECK-05 (Mount Path Validation)**: Verify that `config/groups/*.json` mount targets actually exist on disk.
+
+These checks complement the general checks below and should be included in the health check report under a new **Architecture Integrity** line item.
 
 ### 1. Build Consistency Check
 
@@ -296,6 +304,7 @@ Channels: WhatsApp [CONNECTED/DISCONNECTED], Telegram [N/A]
 Containers: [OK/ZOMBIES_DETECTED/IMAGE_MISSING]
 Database: [OK/INCONSISTENT]
 Network: [OK/DEGRADED]
+Architecture Integrity: [OK/BROKEN_SYMLINKS/ORPHAN_SESSIONS]
 
 Recommendations:
 1. [Action 1]
