@@ -1,0 +1,51 @@
+# Claude Code Ignore File
+# This file tells Claude Code which files and directories to ignore for indexing and context.
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build and runtime outputs
+dist/
+build/
+.next/
+out/
+
+# Git internals
+.git/
+
+# Local data, storage, and logs (Costly to index)
+data/
+store/
+logs/
+groups/*/logs/
+*.log
+
+# Large binary assets
+assets/
+images/
+videos/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.zip
+*.tar.gz
+
+# Configuration secrets and environment
+.env
+*.keys.json
+.nanoclaw/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.tmp
+
+# Documentation that might be too large or redundant
+agents-sdk-docs/
+docs/
+README_zh.md
