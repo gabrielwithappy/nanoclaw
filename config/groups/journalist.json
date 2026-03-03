@@ -1,0 +1,9 @@
+{
+  "additionalMounts": [
+    {
+      "hostPath": "~/documents/work-nanoclaw/nanoclawKMS/nanoclaw-groups/journalist",
+      "containerPath": "journalist-folder",
+      "readonly": false
+    }
+  ]
+}

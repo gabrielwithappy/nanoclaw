@@ -80,6 +80,60 @@ function saveState(): void {
   );
 }
 
+/**
+ * Generate CLAUDE.md content for a newly registered group.
+ * Includes mount information and basic instructions.
+ */
+function generateGroupClaudeMd(group: RegisteredGroup): string {
+  const mounts = group.containerConfig?.additionalMounts || [];
+
+  let mountsTable = `
+| Container Path | Purpose | Access |
+|----------------|---------|--------|
+| \`/workspace/group\` | Your main workspace | read-write |
+| \`/workspace/global\` | Global shared memory | read-only |`;
+
+  for (const mount of mounts) {
+    const containerPath = mount.containerPath || path.basename(mount.hostPath);
+    const purpose = 'Additional storage';
+    const access = mount.readonly ? 'read-only' : 'read-write';
+    mountsTable += `\n| \`/workspace/extra/${containerPath}\` | ${purpose} | ${access} |`;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  return `# ${group.name}
+
+Your dedicated workspace for ${group.name.toLowerCase()} activities.
+
+## Container Mounts
+
+${mountsTable}
+
+## Communication
+
+Your output is sent to the group. Use \`send_message\` tool for immediate delivery while still working.
+
+## Memory
+
+The \`conversations/\` folder contains searchable history of past conversations. Create structured files for important information.
+
+## WhatsApp/Telegram Formatting
+
+Do NOT use markdown headings (##) in messages. Only use:
+- *Bold* (single asterisks)
+- _Italic_ (underscores)
+- • Bullets (bullet points)
+- \`\`\`Code blocks\`\`\` (triple backticks)
+
+Keep messages clean and readable.
+
+---
+
+*Auto-generated on ${timestamp}*
+`;
+}
+
 function registerGroup(jid: string, group: RegisteredGroup): void {
   registeredGroups[jid] = group;
   setRegisteredGroup(jid, group);
@@ -87,6 +141,17 @@ function registerGroup(jid: string, group: RegisteredGroup): void {
   // Create group folder
   const groupDir = path.join(DATA_DIR, '..', 'groups', group.folder);
   fs.mkdirSync(path.join(groupDir, 'logs'), { recursive: true });
+
+  // Create CLAUDE.md with mount information
+  const claudeMdPath = path.join(groupDir, 'CLAUDE.md');
+  if (!fs.existsSync(claudeMdPath)) {
+    const content = generateGroupClaudeMd(group);
+    fs.writeFileSync(claudeMdPath, content, 'utf-8');
+    logger.info(
+      { group: group.name, folder: group.folder },
+      'Created CLAUDE.md with mount information',
+    );
+  }
 
   logger.info(
     { jid, name: group.name, folder: group.folder },
