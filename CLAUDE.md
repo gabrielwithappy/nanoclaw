@@ -59,3 +59,12 @@ systemctl --user restart nanoclaw
 ## Container Build Cache
 
 The container buildkit caches the build context aggressively. `--no-cache` alone does NOT invalidate COPY steps — the builder's volume retains stale files. To force a truly clean rebuild, prune the builder then re-run `./container/build.sh`.
+
+## Agent Hallucination Prevention (Zero-Setup Rule)
+
+When adding new external integrations (like Google Workspace, Jira, etc.) for the group agents, the conversational context history fills up with your setup instructions. As a result, the runtime agents often hallucinate that setup is still ongoing and mistakenly ask the end-user to authenticate or provide credentials.
+
+**To permanently prevent this:**
+1. You must explicitly encode the `Zero-Setup Rule` into `groups/global/CLAUDE.md` (and specific group `CLAUDE.md` files if applicable).
+2. The exact instruction should state: *"If an MCP tool, Bash command, or Skill is present, assume it is fully authenticated and ready to use. Never ask the user to authenticate or setup cloud projects unless a tool invocation explicitly returns a permission error. Execute immediately."*
+3. Every time you finish configuring a new integration via the `customize` workflow, verify that this rule is enforced in the agents' memory.
