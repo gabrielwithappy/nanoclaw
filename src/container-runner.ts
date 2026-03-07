@@ -150,6 +150,17 @@ function buildVolumeMounts(
     });
   }
 
+  // Google Workspace CLI credentials directory
+  const gwsDir = path.join(homeDir, '.config', 'gws');
+  if (fs.existsSync(gwsDir)) {
+    mounts.push({
+      hostPath: gwsDir,
+      containerPath: '/home/node/.config/gws',
+      readonly: false  // May need to refresh tokens
+    });
+  }
+
+
   // Per-group IPC namespace: each group gets its own IPC directory
   // This prevents cross-group privilege escalation via IPC
   const groupIpcDir = resolveGroupIpcPath(group.folder);
