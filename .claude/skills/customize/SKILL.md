@@ -90,15 +90,28 @@ Implementation:
 
 ## After Changes
 
-Always tell the user to rebuild and safely restart the system to apply changes:
-```bash
-# Rebuild
-npm run build
+After making changes or installing new skills, you MUST PROACTIVELY execute the necessary commands to apply the changes, rather than asking the user to do it. Use the `Bash` tool to run the appropriate commands:
 
-# Linux (Safe Restart to prevent zombie containers):
-docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true
-systemctl --user restart nanoclaw
+**1. If you modified Container code (`container/agent-runner/`, `container/Dockerfile`):**
+```bash
+cd container && ./build.sh && cd ..
+npm run build
+docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
 ```
+
+**2. If you modified Host code (`src/`):**
+```bash
+npm run build
+docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
+```
+
+**3. If you only added/modified Skills (`.claude/skills/`, `container/skills/`):**
+To ensure old zombie containers don't conflict and the master daemon reads the new skills, perform a safe restart without needing a full rebuild:
+```bash
+docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
+```
+
+Once you have executed the commands, verify the status using `systemctl --user is-active nanoclaw` and inform the user that the system was successfully restarted and the new skill/capability is ready to use in the chat.
 
 ## Example Interaction
 
