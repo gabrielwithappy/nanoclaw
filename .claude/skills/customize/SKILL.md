@@ -96,19 +96,19 @@ After making changes or installing new skills, you MUST PROACTIVELY execute the 
 ```bash
 cd container && ./build.sh && cd ..
 npm run build
-docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
+systemctl --user stop nanoclaw && docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user start nanoclaw > /dev/null 2>&1 &
 ```
 
 **2. If you modified Host code (`src/`):**
 ```bash
 npm run build
-docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
+systemctl --user stop nanoclaw && docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user start nanoclaw > /dev/null 2>&1 &
 ```
 
 **3. If you only added/modified Skills (`.claude/skills/`, `container/skills/`):**
 To ensure old zombie containers don't conflict and the master daemon reads the new skills, perform a safe restart without needing a full rebuild:
 ```bash
-docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
+systemctl --user stop nanoclaw && docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user start nanoclaw > /dev/null 2>&1 &
 ```
 
 **4. Preventing Setup/Authentication Hallucinations:**
