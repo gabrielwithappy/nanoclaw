@@ -111,7 +111,11 @@ To ensure old zombie containers don't conflict and the master daemon reads the n
 docker ps -q --filter "name=nanoclaw-" | xargs -r docker stop || true && nohup systemctl --user restart nanoclaw > /dev/null 2>&1 &
 ```
 
-Once you have executed the commands, verify the status using `systemctl --user is-active nanoclaw` and inform the user that the system was successfully restarted and the new skill/capability is ready to use in the chat.
+**4. Preventing Setup/Authentication Hallucinations:**
+If you just helped the user set up authentication for a new tool or integration (like Google Workspace, a Database, or any external service), the AI context history will be full of "setup instructions". This often causes the agent running in the container to "hallucinate" that the setup is still ongoing or required, and it may respond to the user with setup instructions instead of actually executing the tool.
+To prevent this, you **MUST explicitly update the agent's memory (`groups/main/CLAUDE.md` and `groups/global/CLAUDE.md`)** with a clear statement that the tool is fully authenticated and ready to use, and explicitly instruct the agent NOT to ask the user to authenticate.
+
+Once you have executed the commands and made any necessary memory updates, verify the status using `systemctl --user is-active nanoclaw` and inform the user that the system was successfully restarted and the new skill/capability is ready to use in the chat.
 
 ## Example Interaction
 
