@@ -220,7 +220,7 @@ export async function processTaskIpc(
             const nextRunDate = interval.next();
             nextRun = nextRunDate.toISOString();
             // For logging: convert next run to user's local timezone for visibility
-            const nextRunLocal = nextRunDate.toLocaleString('en-CA', {
+            const nextRunLocal = nextRunDate.toDate().toLocaleString('en-CA', {
               timeZone: TIMEZONE,
             });
             logger.debug(
