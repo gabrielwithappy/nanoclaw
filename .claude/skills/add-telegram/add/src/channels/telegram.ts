@@ -1,6 +1,6 @@
 import { Bot } from 'grammy';
 
-import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
+import { ASSISTANT_NAME, TRIGGER_PATTERN, TIMEZONE } from '../config.js';
 import { readEnvFile } from '../env.js';
 import { logger } from '../logger.js';
 import { registerChannel, ChannelOpts } from './registry.js';
@@ -58,7 +58,13 @@ export class TelegramChannel implements Channel {
 
       const chatJid = `tg:${ctx.chat.id}`;
       let content = ctx.message.text;
-      const timestamp = new Date(ctx.message.date * 1000).toISOString();
+      // ctx.message.date is Unix timestamp (UTC). Convert to ISO string for storage.
+      const messageDate = new Date(ctx.message.date * 1000);
+      const timestamp = messageDate.toISOString();
+      // For logging/display: convert to user's local timezone
+      const localTimeStr = messageDate.toLocaleString('en-CA', {
+        timeZone: TIMEZONE,
+      });
       const senderName =
         ctx.from?.first_name ||
         ctx.from?.username ||
@@ -119,7 +125,7 @@ export class TelegramChannel implements Channel {
       });
 
       logger.info(
-        { chatJid, chatName, sender: senderName },
+        { chatJid, chatName, sender: senderName, localTime: localTimeStr, tz: TIMEZONE },
         'Telegram message stored',
       );
     });
@@ -130,7 +136,13 @@ export class TelegramChannel implements Channel {
       const group = this.opts.registeredGroups()[chatJid];
       if (!group) return;
 
-      const timestamp = new Date(ctx.message.date * 1000).toISOString();
+      // ctx.message.date is Unix timestamp (UTC). Convert to ISO string for storage.
+      const messageDate = new Date(ctx.message.date * 1000);
+      const timestamp = messageDate.toISOString();
+      // For logging/display: convert to user's local timezone
+      const localTimeStr = messageDate.toLocaleString('en-CA', {
+        timeZone: TIMEZONE,
+      });
       const senderName =
         ctx.from?.first_name ||
         ctx.from?.username ||

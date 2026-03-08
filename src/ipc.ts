@@ -217,7 +217,21 @@ export async function processTaskIpc(
             const interval = CronExpressionParser.parse(data.schedule_value, {
               tz: TIMEZONE,
             });
-            nextRun = interval.next().toISOString();
+            const nextRunDate = interval.next();
+            nextRun = nextRunDate.toISOString();
+            // For logging: convert next run to user's local timezone for visibility
+            const nextRunLocal = nextRunDate.toLocaleString('en-CA', {
+              timeZone: TIMEZONE,
+            });
+            logger.debug(
+              {
+                cron: data.schedule_value,
+                nextRun,
+                nextRunLocal,
+                tz: TIMEZONE,
+              },
+              'Cron task created — next run calculated',
+            );
           } catch {
             logger.warn(
               { scheduleValue: data.schedule_value },

@@ -192,7 +192,22 @@ async function runTask(
     const interval = CronExpressionParser.parse(task.schedule_value, {
       tz: TIMEZONE,
     });
-    nextRun = interval.next().toISOString();
+    const nextRunDate = interval.next();
+    nextRun = nextRunDate.toISOString();
+    // For logging: convert next run to user's local timezone for visibility
+    const nextRunLocal = nextRunDate.toLocaleString('en-CA', {
+      timeZone: TIMEZONE,
+    });
+    logger.debug(
+      {
+        taskId: task.id,
+        cron: task.schedule_value,
+        nextRun,
+        nextRunLocal,
+        tz: TIMEZONE,
+      },
+      'Cron next run calculated',
+    );
   } else if (task.schedule_type === 'interval') {
     const ms = parseInt(task.schedule_value, 10);
     nextRun = new Date(Date.now() + ms).toISOString();
