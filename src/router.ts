@@ -1,4 +1,5 @@
 import { Channel, NewMessage } from './types.js';
+import { TIMEZONE } from './config.js';
 
 export function escapeXml(s: string): string {
   if (!s) return '';
@@ -10,10 +11,25 @@ export function escapeXml(s: string): string {
 }
 
 export function formatMessages(messages: NewMessage[]): string {
+  // Add current date/time context so Agent knows today's date for scheduling
+  // Use the same TIMEZONE logic as container-runner to ensure consistency
+  const now = new Date();
+  const userTz = TIMEZONE;
+  const currentDateLocal = now.toLocaleString('en-CA', { timeZone: userTz }).split(',')[0];
+  const currentTimeLocal = now.toLocaleString('en-CA', { 
+    timeZone: userTz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+  const dayOfWeek = now.toLocaleString('en-US', { weekday: 'long', timeZone: userTz });
+  
+  const dateContext = `[CURRENT DATE/TIME: Today is ${currentDateLocal} (${dayOfWeek}), ${currentTimeLocal} in ${userTz} timezone. Use this for any scheduling, date calculations, or planning.]`;
+  
   const lines = messages.map((m) =>
     `<message sender="${escapeXml(m.sender_name)}" time="${m.timestamp}">${escapeXml(m.content)}</message>`,
   );
-  return `<messages>\n${lines.join('\n')}\n</messages>`;
+  return `${dateContext}\n\n<messages>\n${lines.join('\n')}\n</messages>`;
 }
 
 export function stripInternalTags(text: string): string {
