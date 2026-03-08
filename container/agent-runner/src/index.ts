@@ -18,6 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { query, HookCallback, PreCompactHookInput, PreToolUseHookInput } from '@anthropic-ai/claude-agent-sdk';
 import { fileURLToPath } from 'url';
+import { generateTimezoneContext } from './timezone-utils.js';
 
 interface ContainerInput {
   prompt: string;
@@ -529,6 +530,15 @@ async function main(): Promise<void> {
   if (containerInput.isScheduledTask) {
     prompt = `[SCHEDULED TASK - The following message was sent automatically and is not coming directly from the user or group.]\n\n${prompt}`;
   }
+  
+  // ✅ TIMEZONE FIX: Inject current date/time in user's timezone
+  // This ensures agent uses correct date for scheduling and planning
+  const now = new Date();
+  const userTz = process.env.TZ || 'Asia/Seoul';  // Default to Korea timezone
+  const timezoneContext = generateTimezoneContext(now, userTz);
+  log(`Injected timezone context: ${timezoneContext}`);
+  prompt = `${timezoneContext}\n\n${prompt}`;
+  
   const pending = drainIpcInput();
   if (pending.length > 0) {
     log(`Draining ${pending.length} pending IPC messages into initial prompt`);
