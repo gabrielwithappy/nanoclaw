@@ -16,7 +16,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run e2e/",
-    "test:health": "tsx scripts/health-check.ts"
+    "test:health": "tsx scripts/health-check.ts",
+    "validate:telegram": "tsx scripts/validate-telegram.ts",
+    "validate:telegram:watch": "tsx scripts/validate-telegram.ts --watch",
+    "validate:telegram:verbose": "tsx scripts/validate-telegram.ts --verbose"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.9",

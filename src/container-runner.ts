@@ -435,13 +435,25 @@ export async function runContainerAgent(
             { group: group.name, containerName, duration, code },
             'Container timed out after output (idle cleanup)',
           );
-          outputChain.then(() => {
-            resolve({
-              status: 'success',
-              result: null,
-              newSessionId,
+          outputChain
+            .then(() => {
+              resolve({
+                status: 'success',
+                result: null,
+                newSessionId,
+              });
+            })
+            .catch((err) => {
+              logger.error(
+                { group: group.name, err },
+                'Error in output callback chain (after timeout cleanup)',
+              );
+              resolve({
+                status: 'error',
+                result: null,
+                error: `Output callback error during cleanup: ${err instanceof Error ? err.message : String(err)}`,
+              });
             });
-          });
           return;
         }
 
@@ -538,17 +550,29 @@ export async function runContainerAgent(
 
       // Streaming mode: wait for output chain to settle, return completion marker
       if (onOutput) {
-        outputChain.then(() => {
-          logger.info(
-            { group: group.name, duration, newSessionId },
-            'Container completed (streaming mode)',
-          );
-          resolve({
-            status: 'success',
-            result: null,
-            newSessionId,
+        outputChain
+          .then(() => {
+            logger.info(
+              { group: group.name, duration, newSessionId },
+              'Container completed (streaming mode)',
+            );
+            resolve({
+              status: 'success',
+              result: null,
+              newSessionId,
+            });
+          })
+          .catch((err) => {
+            logger.error(
+              { group: group.name, err },
+              'Error in output callback chain',
+            );
+            resolve({
+              status: 'error',
+              result: null,
+              error: `Output callback error: ${err instanceof Error ? err.message : String(err)}`,
+            });
           });
-        });
         return;
       }
 

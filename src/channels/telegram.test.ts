@@ -34,6 +34,11 @@ vi.mock('grammy', () => ({
     api = {
       sendMessage: vi.fn().mockResolvedValue(undefined),
       sendChatAction: vi.fn().mockResolvedValue(undefined),
+      config: {
+        use: vi.fn((fn) => {
+          // Mock middleware function
+        }),
+      },
     };
 
     constructor(token: string) {
