@@ -59,12 +59,12 @@ describe('escapeXml', () => {
 
 describe('formatMessages', () => {
   it('formats a single message as XML', () => {
-    const result = formatMessages([makeMsg()]);
-    expect(result).toBe(
-      '<messages>\n' +
-        '<message sender="Alice" time="2024-01-01T00:00:00.000Z">hello</message>\n' +
-        '</messages>',
+    const result = formatMessages([makeMsg()], 'whatsapp');
+    expect(result).toContain('<messages channel="whatsapp">');
+    expect(result).toContain(
+      '<message sender="Alice" time="2024-01-01T00:00:00.000Z" channel="whatsapp">hello</message>',
     );
+    expect(result).toMatch(/^\[CURRENT DATE\/TIME: .*\]/);
   });
 
   it('formats multiple messages', () => {
@@ -99,8 +99,9 @@ describe('formatMessages', () => {
   });
 
   it('handles empty array', () => {
-    const result = formatMessages([]);
-    expect(result).toBe('<messages>\n\n</messages>');
+    const result = formatMessages([], 'whatsapp');
+    expect(result).toContain('<messages channel="whatsapp">');
+    expect(result).toContain('</messages>');
   });
 });
 
